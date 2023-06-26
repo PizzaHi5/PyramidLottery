@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./programs/pyramid_lottery/Cargo.toml"
+    ]
+}
