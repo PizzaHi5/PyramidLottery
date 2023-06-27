@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
-use std::cell::RefCell;
+use std::ops::*;
+
 
 declare_id!("EnNAUhQEdDNtNszfguvK5RSkSLDStPLtUqeLpbjayoNq");
 
@@ -111,6 +112,8 @@ pub mod lottery {
 }
 
 pub mod restaking_pool {
+    use std::ops::DerefMut;
+
     use super::*;
 
     pub fn initialize_pool(ctx: Context<CreatePool>) -> Result<()> {
@@ -149,14 +152,23 @@ pub mod restaking_pool {
 
     pub fn restake_ticket(ctx: Context<RestakeTicket>) -> Result<()> {
         let pool: &mut Account<Pool> = &mut ctx.accounts.pool;
-        let lottery: &mut Account<Lottery> = &mut ctx.accounts.lottery;
+        let lottery: &Account<Lottery> = &ctx.accounts.lottery;
         let ticket: &mut Account<Ticket> = &mut ctx.accounts.ticket;
 
         //check txn submitter == ticket submitter
-
-        //check ticket not already submitted for this lottery
+        if ticket.submitter != ctx.accounts.player.key() {
+            msg!("Not Allowed to Send");
+            //return Err(ErrorCode::CannotSubmit.into());
+        }
 
         //check lottery is added to pool
+        for this_lottery in pool.lotteries.iter() {
+            if this_lottery == lottery.deref() {
+                msg!("Lottery Found! This is good!");
+            }
+        }
+
+        //check ticket not already submitted for this lottery
 
         //check lottery winner has not been picked
             //if winner has been decided, call remove_lottery
@@ -253,7 +265,8 @@ pub struct RestakeTicket<'info> {
     pub lottery: Account<'info, Lottery>,
     #[account(mut)]
     pub ticket: Account<'info, Ticket>,
-
+    #[account(mut)]
+    pub player: Signer<'info>,
 }
 
 // Accounts
@@ -261,6 +274,7 @@ pub struct RestakeTicket<'info> {
 
 // Lottery account 
 #[account]
+#[derive(PartialEq)]
 pub struct Lottery {    
     pub authority: Pubkey, 
     pub oracle: Pubkey, 
@@ -287,3 +301,9 @@ pub struct Pool {
     pub lottery_count: u32,
 }
 
+// Errors
+#[repr(C)]
+pub enum ErrorCode {
+    CannotSubmit,
+    ShouldnotSubmit,
+}
