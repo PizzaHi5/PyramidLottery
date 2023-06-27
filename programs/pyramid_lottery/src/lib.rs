@@ -112,14 +112,50 @@ pub mod lottery {
 pub mod restaking_pool {
     use super::*;
 
-    pub fn initialize_pool(ctx: Context<Pool>) -> Result<()> {
-        //set admin
-        
+    pub fn initialize_pool(ctx: Context<CreatePool>) -> Result<()> {
+        //grab pool
+        let pool: &mut Account<Pool> = &mut ctx.accounts.pool;
+        //set admin/other details
+        pool.authority = ctx.accounts.admin.key();
+        pool.balance = 0;
+        pool.lottery_count = 0;
+    
         Ok(())
     }
 
-    pub fn add_lottery(ctx: Context<Lottery>, cty: Context<Pool>) -> Result<()> {
-        
+    pub fn add_lottery(ctx: Context<AddLottery>) -> Result<()> {
+        let pool: &mut Account<Pool> = &mut ctx.accounts.pool;
+        let lottery: &mut Account<Lottery> = &mut ctx.accounts.lottery;
+
+        //check array size < MAX_LOTTERY_COUNT
+
+        //check lottery not already added to pool
+
+        //add lottery to pool array
+
+        //increment pool lottery_count
+
+        //increment balance by newly add lottery lamports balance
+
+        Ok(())
+    }
+
+    pub fn restake_ticket(ctx: Context<RestakeTicket>) -> Result<()> {
+        let pool: &mut Account<Pool> = &mut ctx.accounts.pool;
+        let lottery: &mut Account<Lottery> = &mut ctx.accounts.lottery;
+        let ticket: &mut Account<Ticket> = &mut ctx.accounts.ticket;
+
+        //check txn submitter == ticket submitter
+
+        //check ticket not already submitted for this lottery
+
+        //check lottery is added to pool
+
+        //check lottery winner has not been picked
+            //if winner has been decided, call remove_lottery
+
+        //increment lottery count
+
         Ok(())
     }
 }
@@ -164,7 +200,7 @@ pub struct Winner<'info> {
 }
 
 #[derive(Accounts)]
-pub struct Payout<'info> {             
+pub struct Payout<'info> {
     #[account(mut, 
         constraint = 
         ticket.submitter == *winner.key && 
@@ -199,6 +235,18 @@ pub struct AddLottery<'info> {
     pub pool: Account<'info, Pool>,
     #[account(mut)]
     pub lottery: Account<'info, Lottery>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct RestakeTicket<'info> {
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    #[account(mut)]
+    pub lottery: Account<'info, Lottery>,
+    #[account(mut)]
+    pub ticket: Account<'info, Ticket>,
+
 }
 
 // Accounts
