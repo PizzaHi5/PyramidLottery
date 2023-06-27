@@ -5,6 +5,7 @@ use std::ops::*;
 declare_id!("EnNAUhQEdDNtNszfguvK5RSkSLDStPLtUqeLpbjayoNq");
 
 const MAX_LOTTERY_COUNT: usize = 100;
+const MAX_IDX_COUNT: usize = 256;
 
 #[program]
 pub mod lottery {
@@ -49,7 +50,11 @@ pub mod lottery {
         ticket.submitter = ctx.accounts.player.key();
 
         // Set ticket index equal to the counter
-        ticket.idx = lottery.count;        
+        ticket.idx = lottery.count;
+
+        // Store ticket idx to ensure non-duplicate ticket entries
+        let idx = lottery.count.clone();
+        lottery.idxs[idx as usize] = ticket.idx;
 
         // Increment total submissions counter
         lottery.count += 1;                      
@@ -157,23 +162,28 @@ pub mod restaking_pool {
 
         //check txn submitter == ticket submitter
         if ticket.submitter != ctx.accounts.player.key() {
-            msg!("Not Allowed to Send");
+            msg!("Not Allowed to Send, Reject Restake");
             //return Err(ErrorCode::CannotSubmit.into());
         }
-
         //check lottery is added to pool
         for this_lottery in pool.lotteries.iter() {
             if this_lottery == lottery.deref() {
                 msg!("Lottery Found! This is good!");
             }
         }
-
         //check ticket not already submitted for this lottery
-
+        for idx in lottery.idxs.iter() {
+            if *idx == ticket.idx {
+                msg!("This ticket is already used! Reject Restake!");
+            }
+        }
         //check lottery winner has not been picked
-            //if winner has been decided, call remove_lottery
+        if lottery.winner_index > 0 {
+            msg!("Winner decided, Reject Restake!")
+        }
 
         //increment lottery count
+        pool.lottery_count += 1;
 
         Ok(())
     }
@@ -282,13 +292,14 @@ pub struct Lottery {
     pub winner_index: u32, 
     pub count: u32,
     pub ticket_price: u64,
+    pub idxs: [u32; MAX_IDX_COUNT],
 }
 
 // Ticket PDA
 #[account]
 #[derive(Default)] 
-pub struct Ticket {    
-    pub submitter: Pubkey,    
+pub struct Ticket {
+    pub submitter: Pubkey,
     pub idx: u32,
 }
 
