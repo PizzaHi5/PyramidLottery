@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use std::cell::RefCell;
 
 declare_id!("EnNAUhQEdDNtNszfguvK5RSkSLDStPLtUqeLpbjayoNq");
 
@@ -125,15 +126,21 @@ pub mod restaking_pool {
 
     pub fn add_lottery(ctx: Context<AddLottery>) -> Result<()> {
         let pool: &mut Account<Pool> = &mut ctx.accounts.pool;
+
+        //this might need to be the actual account rather than a mutable reference
         let lottery: &mut Account<Lottery> = &mut ctx.accounts.lottery;
+        //let lottary: &Lottery = &*lottery; // dereferences/clones the Lottery account data, would have to update account data everytime its called
 
         //check array size < MAX_LOTTERY_COUNT
 
         //check lottery not already added to pool
 
         //add lottery to pool array
+        //pool.lotteries[pool.lottery_count as usize] = *lottery.deref_mut().deref(); //cannot be moved out of shared reference
+        //pool.lotteries.push(lottary.clone());
 
         //increment pool lottery_count
+        pool.lottery_count += 1;
 
         //increment balance by newly add lottery lamports balance
 
@@ -275,6 +282,7 @@ pub struct Ticket {
 pub struct Pool {
     pub authority: Pubkey,
     pub balance: u64,
+    //pub lotteries: Vec<Account<'_, Lottery>>,
     pub lotteries: [Lottery; MAX_LOTTERY_COUNT],
     pub lottery_count: u32,
 }
