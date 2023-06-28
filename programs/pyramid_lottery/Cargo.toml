@@ -17,3 +17,6 @@ default = []
 
 [dependencies]
 anchor-lang = "0.28.0"
+
+[programs.localnet]
+solanta_twitter = "EFSsGtygxE3CoYqrxY9hAJ6nLuL2SNyLnrzLAsyWJo3P"

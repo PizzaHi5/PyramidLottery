@@ -2,10 +2,10 @@ use anchor_lang::prelude::*;
 use std::ops::*;
 
 
-declare_id!("EnNAUhQEdDNtNszfguvK5RSkSLDStPLtUqeLpbjayoNq");
+declare_id!("EFSsGtygxE3CoYqrxY9hAJ6nLuL2SNyLnrzLAsyWJo3P");
 
-const MAX_LOTTERY_COUNT: usize = 100;
-const MAX_IDX_COUNT: usize = 256;
+const MAX_LOTTERY_COUNT: usize = 5;
+const MAX_IDX_COUNT: usize = 10;
 
 #[program]
 pub mod lottery {
@@ -170,7 +170,7 @@ pub mod restaking_pool {
 
         //check txn submitter == ticket submitter
         if ticket.submitter != ctx.accounts.player.key() {
-            msg!("Not Allowed to Send, Reject Restake");
+            msg!("Not Allowed to send txn");
             return err!(LotteryErrorCode::TicketSubmitterNotAllowed);
         }
         //check lottery is added to pool
