@@ -182,23 +182,28 @@ pub mod restaking_pool {
         //check txn submitter == ticket submitter
         if ticket.submitter != ctx.accounts.player.key() {
             msg!("Not Allowed to Send, Reject Restake");
-            //return Err(ErrorCode::CannotSubmit.into());
+            return err!(LotteryErrorCode::TicketSubmitterNotAllowed);
         }
         //check lottery is added to pool
-        for this_lottery in pool.lotteries.iter() {
-            if this_lottery == lottery.deref() {
-                msg!("Lottery Found! This is good!");
-            }
+        for (index, this_lottery) in pool.lotteries.iter().enumerate() {
+            if this_lottery != lottery.deref() {
+                if index == pool.lotteries.len() - 1 {
+                    msg!("Lottery Not Found");
+                    return err!(LotteryErrorCode::LotteryNotFound);
+                }
+            } else { break; }
         }
         //check ticket not already submitted for this lottery
         for idx in lottery.idxs.iter() {
             if *idx == ticket.idx {
-                msg!("This ticket is already used! Reject Restake!");
+                msg!("This ticket is already used");
+                return err!(LotteryErrorCode::RestakeDenied);
             }
         }
         //check lottery winner has not been picked
         if lottery.winner_index > 0 {
-            msg!("Winner decided, Reject Restake!")
+            msg!("Winner already decided");
+            return err!(LotteryErrorCode::LotteryClosed);
         }
 
         //increment lottery count
@@ -337,5 +342,13 @@ pub enum LotteryErrorCode {
     #[msg("Lottery limit has been reached")]
     LotteryMaxLimit,
     #[msg("Lottery already exists in the pool")]
-    LotteryAlreadyExists
+    LotteryAlreadyExists,
+    #[msg("Ticket Submitter not allowed")]
+    TicketSubmitterNotAllowed,
+    #[msg("Lottery Not Found")]
+    LotteryNotFound,
+    #[msg("Ticket already staked")]
+    RestakeDenied,
+    #[msg("Lottery Closed")]
+    LotteryClosed,
 }
