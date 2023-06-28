@@ -134,9 +134,6 @@ pub mod restaking_pool {
 
     pub fn add_lottery(ctx: Context<AddLottery>) -> Result<()> {
         let pool: &mut Account<Pool> = &mut ctx.accounts.pool;
-
-        //this might need to be the actual account rather than a mutable reference
-        //At this point I think we need the actual lottery to be able to add it to the pool
         let lottery:&mut Account<Lottery> = &mut ctx.accounts.lottery;
         
         //check array size < MAX_LOTTERY_COUNT
@@ -152,31 +149,23 @@ pub mod restaking_pool {
                 return err!(LotteryErrorCode::LotteryAlreadyExists);
             }
         }
+
+        //add lottery to pool array
         let lottery_index = pool.lottery_count;
         pool.lotteries[lottery_index] = (* lottery.deref_mut().deref()).clone();
         
-        
-        //let lottary: &Lottery = &*lottery; // dereferences/clones the Lottery account data, would have to update account data everytime its called
-
-        
-
-        
-
-        //add lottery to pool array
-        //pool.lotteries[pool.lottery_count as usize] = *lottery.deref_mut().deref(); //cannot be moved out of shared reference
-        //pool.lotteries.push(lottary.clone());
-
         //increment pool lottery_count
         pool.lottery_count += 1;
 
         //increment balance by newly add lottery lamports balance
+
 
         Ok(())
     }
 
     pub fn restake_ticket(ctx: Context<RestakeTicket>) -> Result<()> {
         let pool: &mut Account<Pool> = &mut ctx.accounts.pool;
-        let lottery: &Account<Lottery> = &ctx.accounts.lottery;
+        let lottery: &mut Account<Lottery> = &mut ctx.accounts.lottery;
         let ticket: &mut Account<Ticket> = &mut ctx.accounts.ticket;
 
         //check txn submitter == ticket submitter
@@ -186,7 +175,7 @@ pub mod restaking_pool {
         }
         //check lottery is added to pool
         for (index, this_lottery) in pool.lotteries.iter().enumerate() {
-            if this_lottery != lottery.deref() {
+            if this_lottery != lottery.deref_mut() {
                 if index == pool.lotteries.len() - 1 {
                     msg!("Lottery Not Found");
                     return err!(LotteryErrorCode::LotteryNotFound);
@@ -206,8 +195,10 @@ pub mod restaking_pool {
             return err!(LotteryErrorCode::LotteryClosed);
         }
 
-        //increment lottery count
-        pool.lottery_count += 1;
+        //increment counter / store new idx in lottery
+        let idx = lottery.count.clone();
+        lottery.idxs[idx as usize] = ticket.idx;
+        lottery.count += 1;
 
         Ok(())
     }
