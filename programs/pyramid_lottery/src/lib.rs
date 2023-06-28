@@ -136,12 +136,31 @@ pub mod restaking_pool {
         let pool: &mut Account<Pool> = &mut ctx.accounts.pool;
 
         //this might need to be the actual account rather than a mutable reference
-        let lottery: &mut Account<Lottery> = &mut ctx.accounts.lottery;
-        //let lottary: &Lottery = &*lottery; // dereferences/clones the Lottery account data, would have to update account data everytime its called
-
+        //At this point I think we need the actual lottery to be able to add it to the pool
+        let lottery:&mut Account<Lottery> = &mut ctx.accounts.lottery;
+        
         //check array size < MAX_LOTTERY_COUNT
+        if pool.lottery_count >= MAX_LOTTERY_COUNT {
+            msg!("Lottery Limit Reached");
+            return err!(LotteryErrorCode::LotteryMaxLimit);
+        }
 
         //check lottery not already added to pool
+        for this_lottery in pool.lotteries.iter() {
+            if this_lottery.authority == lottery.authority {
+                msg!("Lottery Already in the Pool");
+                return err!(LotteryErrorCode::LotteryAlreadyExists);
+            }
+        }
+        let lottery_index = pool.lottery_count;
+        pool.lotteries[lottery_index] = (* lottery.deref_mut().deref()).clone();
+        
+        
+        //let lottary: &Lottery = &*lottery; // dereferences/clones the Lottery account data, would have to update account data everytime its called
+
+        
+
+        
 
         //add lottery to pool array
         //pool.lotteries[pool.lottery_count as usize] = *lottery.deref_mut().deref(); //cannot be moved out of shared reference
@@ -309,12 +328,14 @@ pub struct Pool {
     pub balance: u64,
     //pub lotteries: Vec<Account<'_, Lottery>>,
     pub lotteries: [Lottery; MAX_LOTTERY_COUNT],
-    pub lottery_count: u32,
+    pub lottery_count: usize,
 }
 
 // Errors
-#[repr(C)]
-pub enum ErrorCode {
-    CannotSubmit,
-    ShouldnotSubmit,
+#[error_code]
+pub enum LotteryErrorCode {
+    #[msg("Lottery limit has been reached")]
+    LotteryMaxLimit,
+    #[msg("Lottery already exists in the pool")]
+    LotteryAlreadyExists
 }
